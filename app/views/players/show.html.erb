@@ -1,0 +1,107 @@
+<h2><%= @player.name %>'s Dashboard</h2>
+<% if @player.game.game_won? %>
+  <div class="bg-yellow-300 text-black p-4 rounded mb-4 font-bold">
+    🎉 The game is over! <%= @player.name %> has eliminated all Rainmakers and won the game!
+  </div>
+<% end %>
+
+<% if @player.name == "Old Joe" && @player.rainmaker_kills.count == Location.where(has_rainmaker: true).count %>
+  <p class="text-green-700 font-bold mt-2">🎉 You have eliminated all Rainmakers! You win!</p>
+<% end %>
+<p>Status: <%= @player.status %></p>
+
+<p>
+  Current Location:
+  <strong>
+    <%= @player.player_position&.location&.name || "Unknown" %>
+  </strong>
+</p>
+
+<% rainmakers_total = Location.where(has_rainmaker: true).count %>
+<% rainmakers_killed = @player.rainmaker_kills.count %>
+<p><strong>Rainmakers defeated:</strong> <%= "#{rainmakers_killed} / #{rainmakers_total}" %></p>
+
+<% unless @player.game.game_won? %>
+
+  <% if @player == @player.game.current_turn_player %>
+    <%= form_with url: move_player_path(@player), method: :post, local: true do |f| %>
+      <div>
+        <label for="location_id">Move to:</label>
+        <%= select_tag :location_id,
+          options_from_collection_for_select(Location.all, :id, :name),
+          prompt: "Select Location" %>
+      </div>
+      <%= f.submit "Move", class: "mt-2 px-3 py-1 bg-blue-500 text-white rounded" %>
+    <% end %>
+
+    <%= button_to "Draw Card", draw_card_player_path(@player), method: :post,
+          class: "mt-4 px-4 py-2 bg-yellow-500 text-white rounded" %>
+
+    <%= button_to "End Turn", advance_turn_game_path(@player.game), method: :post,
+          class: "mt-4 px-4 py-2 bg-green-500 text-white rounded" %>
+  <% else %>
+    <p class="mt-4 text-gray-600 italic">Waiting for your turn...</p>
+  <% end %>
+<% else %>
+  <p class="mt-4 text-gray-700 italic">No further actions possible. The game is complete.</p>
+<% end %>
+
+<% if notice %>
+  <p class="text-green-600 mt-3"><%= notice %></p>
+<% elsif alert %>
+  <p class="text-red-600 mt-3"><%= alert %></p>
+<% end %>
+
+<p class="mt-4">
+  <%= link_to "🔍 View Board", game_board_path(@player.game), class: "text-blue-600 underline" %>
+</p>
+
+<% if @player.name == "Sara" %>
+  <div class="mt-6 border-t pt-4">
+    <h3 class="font-semibold text-purple-700 mb-2">Relocate Primary Rainmaker</h3>
+
+    <%= form_with url: relocate_rainmaker_player_path(@player), method: :post, local: true do %>
+      <%= select_tag :new_location_id,
+          options_from_collection_for_select(Location.all, :id, :name),
+          prompt: "Select New Location",
+          class: "border rounded px-2 py-1" %>
+      <%= submit_tag "Relocate", class: "ml-2 px-3 py-1 bg-purple-600 text-white rounded" %>
+    <% end %>
+  </div>
+<% end %>
+
+<% if @player.name == "Young Joe" &&
+      @player.has_all_clue_cards? &&
+      @player.game.sara_trusts_young_joe %>
+  <%= button_to "End My Loop", self_terminate_player_path(@player),
+                method: :post,
+                class: "mt-4 px-4 py-2 bg-red-600 text-white rounded" %>
+<% end %>
+
+
+
+<h3 class="mt-6 font-semibold text-lg">Your Cards:</h3>
+<ul>
+  <% @player.cards.each do |card| %>
+    <li class="my-2 flex items-center">
+      <%# Icon based on card_type %>
+      <% icon = case card.card_type
+         when 'Attack' then '⚔️'
+         when 'Defense' then '🛡️'
+         when 'Heal' then '💊'
+         when 'Steal' then '🕵️‍♂️'
+         when 'Trap' then '🪤'
+         else '🃏'
+      end %>
+
+      <span class="mr-2 text-xl"><%= icon %></span>
+      <span class="mr-2"><%= card.card_type %>: <%= card.content %></span>
+
+      <% if @player == @player.game.current_turn_player %>
+        <%= button_to "Play", play_card_player_path(@player, card_id: card.id),
+              method: :post,
+              class: "ml-auto px-2 py-1 bg-red-500 text-white text-sm rounded" %>
+      <% end %>
+    </li>
+  <% end %>
+</ul>

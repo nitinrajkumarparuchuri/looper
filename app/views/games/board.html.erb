@@ -1,0 +1,26 @@
+<h2 class="text-xl font-bold mb-4">Game Board</h2>
+
+<div class="grid grid-cols-5 gap-2">
+  <% @locations.each do |location| %>
+    <div class="border p-2 rounded bg-gray-100 text-sm">
+      <strong><%= location.name %></strong><br>
+
+      <% if location.has_rainmaker %>
+        <span>🌧️</span>
+      <% end %>
+
+
+      <% @players.each do |player| %>
+        <% if player.player_position&.location_id == location.id %>
+          <div>
+            <%= player.name %>
+            <% if player.name == "Gat Man" %>🕶️<% end %>
+            <% if player.name == "Old Joe" %>👴<% end %>
+            <% if player.name == "Young Joe" %>🧑<% end %>
+            <% if player.name == "Sara" %>👧<% end %>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
